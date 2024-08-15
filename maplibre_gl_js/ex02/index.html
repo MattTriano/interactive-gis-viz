@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapLibre GL JS Interactive Example</title>
+    <script src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js'></script>
+    <link href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #menu {
+            position: absolute;
+            background: #fff;
+            padding: 10px;
+            font-family: 'Open Sans', sans-serif;
+        }
+        #coordinates {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            font-family: 'Open Sans', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="menu">
+        <input id="marker-toggle" type="checkbox" name="marker-toggle" value="point" checked>
+        <label for="marker-toggle">Toggle Marker</label>
+    </div>
+    <div id="coordinates"></div>
+    <script>
+        var map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://demotiles.maplibre.org/style.json',
+            center: [0, 0],
+            zoom: 2
+        });
+
+        map.on('load', function () {
+            // Add a GeoJSON source with a single point
+            map.addSource('point', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': [{
+                        'type': 'Feature',
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': [0, 0]
+                        },
+                        'properties': {
+                            'title': 'Null Island',
+                            'description': 'A fictional place at 0°N 0°E'
+                        }
+                    }]
+                }
+            });
+
+            // Add a circle layer
+            map.addLayer({
+                'id': 'point',
+                'type': 'circle',
+                'source': 'point',
+                'paint': {
+                    'circle-radius': 10,
+                    'circle-color': '#3887be'
+                }
+            });
+
+            // Add a popup
+            map.on('click', 'point', function (e) {
+                var coordinates = e.features[0].geometry.coordinates.slice();
+                var description = e.features[0].properties.description;
+
+                new maplibregl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+
+            // Change the cursor to a pointer when hovering over the point layer
+            map.on('mouseenter', 'point', function () {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves
+            map.on('mouseleave', 'point', function () {
+                map.getCanvas().style.cursor = '';
+            });
+
+            // Layer toggle functionality
+            var toggleableLayerIds = ['point'];
+
+            toggleableLayerIds.forEach(function (layerId) {
+                var link = document.getElementById('marker-toggle');
+
+                link.onclick = function (e) {
+                    var clickedLayer = this.value;
+
+                    var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+
+                    if (visibility === 'visible' || visibility === undefined) {
+                        map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                        this.checked = false;
+                    } else {
+                        map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+                        this.checked = true;
+                    }
+                };
+            });
+
+            // Display coordinates on click
+            map.on('click', function (e) {
+                var lat = e.lngLat.lat.toFixed(4);
+                var lon = e.lngLat.lng.toFixed(4);
+                document.getElementById('coordinates').innerHTML = 
+                    'Latitude: ' + lat + '<br />Longitude: ' + lon;
+            });
+        });
+    </script>
+</body>
+</html>
